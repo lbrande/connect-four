@@ -36,25 +36,30 @@ impl Game {
     fn winner(&self, col: usize, row: usize) -> Option<Color> {
         let cell = self.board[col][row];
         for d_col in -1..=1 {
-            'next: for d_row in -1..=1 {
-                if (d_col != 0 || d_row != 0) && Self::is_within_bounds(col, row, d_col, d_row, 3) {
-                    for d_t in 1..=3 {
-                        let other_col = (col as i32 + d_t * d_col) as usize;
-                        let other_row = (row as i32 + d_t * d_row) as usize;
-                        if self.board[other_col][other_row] != cell {
-                            continue 'next;
+            for d_row in -1..=1 {
+                if d_col != 0 || d_row != 0 {
+                    let mut count = 0;
+                    for d_t in -3..=3 {
+                        let other_col = col as i32 + d_t * d_col;
+                        let other_row = row as i32 + d_t * d_row;
+                        if Self::is_within_bounds(other_col, other_row)
+                            && self.board[other_col as usize][other_row as usize] == cell
+                        {
+                            count += 1;
+                            if count == 4 {
+                                return cell;
+                            }
+                        } else {
+                            count = 0;
                         }
                     }
-                    return cell;
                 }
             }
         }
         None
     }
 
-    fn is_within_bounds(col: usize, row: usize, d_col: i32, d_row: i32, d_t: i32) -> bool {
-        let col = col as i32 + d_t * d_col;
-        let row = row as i32 + d_t * d_row;
+    fn is_within_bounds(col: i32, row: i32) -> bool {
         col >= 0 && col < 7 && row >= 0 && row < 6
     }
 }
