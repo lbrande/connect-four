@@ -40,11 +40,9 @@ impl Game {
                 if d_col != 0 || d_row != 0 {
                     let mut count = 0;
                     for d_t in -3..=3 {
-                        let other_col = col as i32 + d_t * d_col;
-                        let other_row = row as i32 + d_t * d_row;
-                        if Self::is_within_bounds(other_col, other_row)
-                            && self.board[other_col as usize][other_row as usize] == cell
-                        {
+                        let i_col = col as i32 + d_t * d_col;
+                        let i_row = row as i32 + d_t * d_row;
+                        if self.is_equals(cell, i_col, i_row) {
                             count += 1;
                             if count == 4 {
                                 return cell;
@@ -59,7 +57,8 @@ impl Game {
         None
     }
 
-    fn is_within_bounds(col: i32, row: i32) -> bool {
-        col >= 0 && col < 7 && row >= 0 && row < 6
+    fn is_equals(&self, cell: Option<Color>, i_col: i32, i_row: i32) -> bool {
+        (i_col >= 0 && i_col < 7 && i_row >= 0 && i_row < 6)
+            && cell == self.board[i_col as usize][i_row as usize]
     }
 }
