@@ -1,3 +1,5 @@
+#![allow(clippy::needless_range_loop)]
+
 use std::ops::Not;
 
 pub mod ai;
@@ -46,6 +48,10 @@ impl Game {
         self.turn
     }
 
+    pub fn col_is_full(&self, col: usize) -> bool {
+        self.board[col][5].is_some()
+    }
+
     fn winner(&self, col: usize, row: usize) -> Option<Color> {
         let cell = self.board[col][row];
         for d_col in -1..=1 {
@@ -67,7 +73,7 @@ impl Game {
                 }
             }
         }
-        if self.board.iter().map(|c| c[5]).all(Color::is_some) {
+        if (0..7).all(|c| self.col_is_full(c)) {
             Some(Color::None)
         } else {
             None
@@ -80,7 +86,7 @@ impl Game {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Color {
     None,
     Blue,
