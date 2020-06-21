@@ -5,7 +5,7 @@ fn main() -> io::Result<()> {
     let mut game = Game::new();
     loop {
         print_board(&game);
-        print!("{} to enter column (1 - 7)> ", cell_char(Some(game.turn())));
+        print!("{} to enter column (1 - 7)> ", cell_char(game.turn()));
         io::stdout().flush()?;
         let mut response = String::new();
         io::stdin().read_line(&mut response)?;
@@ -14,7 +14,10 @@ fn main() -> io::Result<()> {
                 if let Ok(result) = game.drop_piece(col - 1) {
                     if let Some(winner) = result {
                         print_board(&game);
-                        println!("{} won", cell_char(Some(winner)));
+                        match cell_char(winner) {
+                            ' ' => println!("Draw"),
+                            c => println!("{} won", c),
+                        }
                         break;
                     }
                 } else {
@@ -40,14 +43,10 @@ fn print_board(game: &Game) {
     }
 }
 
-fn cell_char(cell: Option<Color>) -> char {
-    if let Some(color) = cell {
-        if color {
-            'O'
-        } else {
-            'X'
-        }
-    } else {
-        ' '
+fn cell_char(cell: Color) -> char {
+    match cell {
+        Color::None => ' ',
+        Color::Blue => 'X',
+        Color::Red => 'O',
     }
 }
