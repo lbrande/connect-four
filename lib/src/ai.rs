@@ -11,7 +11,7 @@ pub struct SimpleAI {
 
 impl AI for SimpleAI {
     fn get_column(&mut self, game: &Game) -> usize {
-        self.get_column_helper(game, 1)
+        self.get_column_helper(game, 1).0
     }
 }
 
@@ -34,19 +34,21 @@ impl SimpleAI {
         }
     }
 
-    fn get_column_helper(&mut self, game: &Game, depth: usize) -> usize {
+    fn get_column_helper(&mut self, game: &Game, depth: usize) -> (usize, f32) {
         let self_color = game.turn();
         let mut wins = [0.0; 7];
         for col in 0..7 {
-            if depth < self.params.max_depth {
-                //recursive
-            } else if !game.col_is_full(col) {
+            if !game.col_is_full(col) {
                 for _ in 0..self.params.nrollouts {
                     let mut game = game.clone();
                     if let Ok(Some(winner)) = game.drop_piece(col) {
                         wins[col] = self.params.nrollouts as f32 * self.d_wins(self_color, winner);
                         break;
-                    };
+                    } else if depth < self.params.max_depth {
+                        wins[col] = self.params.nrollouts as f32
+                            - self.get_column_helper(&game, depth + 1).1;
+                        break;
+                    }
                     loop {
                         if let Ok(Some(winner)) = game.drop_piece(random::<usize>() % 7) {
                             wins[col] += self.d_wins(self_color, winner);
@@ -66,7 +68,7 @@ impl SimpleAI {
                 max_wins = wins[max_col];
             }
         }
-        max_col
+        (max_col, max_wins)
     }
 
     fn d_wins(&self, self_color: Color, winner: Color) -> f32 {
