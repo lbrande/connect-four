@@ -13,7 +13,6 @@ impl AI for SimpleAI {
     fn get_column(&mut self, game: &Game) -> usize {
         self.get_column_helper(game, 1)
     }
-    
 }
 
 impl Default for SimpleAI {
@@ -41,8 +40,7 @@ impl SimpleAI {
         for col in 0..7 {
             if depth < self.params.max_depth {
                 //recursive
-            }
-            else if !game.col_is_full(col) {
+            } else if !game.col_is_full(col) {
                 for _ in 0..self.params.nrollouts {
                     let mut game = game.clone();
                     if let Ok(Some(winner)) = game.drop_piece(col) {
