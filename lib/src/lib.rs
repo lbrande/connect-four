@@ -54,21 +54,25 @@ impl Game {
 
     fn winner(&self, col: usize, row: usize) -> Option<Color> {
         let cell = self.board[col][row];
-        for d_col in -1..=1 {
-            for d_row in -1..=1 {
+        for d_col in 0..=1 {
+            for d_row in 0..=1 {
                 if d_col != 0 || d_row != 0 {
                     let mut count = 0;
-                    for d_t in -3..=3 {
-                        let i_col = col as i32 + d_t * d_col;
-                        let i_row = row as i32 + d_t * d_row;
-                        if self.is_equals_to_cell(i_col, i_row, cell) {
-                            count += 1;
-                            if count == 4 {
-                                return Some(cell);
+                    let mut inc_count = |range: &[i32]| {
+                        for d_t in range {
+                            let i_col = col as i32 + d_t * d_col;
+                            let i_row = row as i32 + d_t * d_row;
+                            if self.is_equals_to_cell(i_col, i_row, cell) {
+                                count += 1;
+                            } else {
+                                break;
                             }
-                        } else {
-                            count = 0;
                         }
+                    };
+                    inc_count(&[-1, -2, -3]);
+                    inc_count(&[1, 2, 3]);
+                    if count >= 3 {
+                        return Some(cell);
                     }
                 }
             }

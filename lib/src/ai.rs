@@ -12,10 +12,40 @@ pub struct SimpleAI {
 
 impl AI for SimpleAI {
     fn get_column(&mut self, game: &Game) -> usize {
+        self.get_column_depth(game, 1)
+    }
+    
+}
+
+impl Default for SimpleAI {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SimpleAI {
+    pub fn new() -> Self {
+        Self {
+            params: SimpleAIParams::default(),
+            color: Color::None,
+        }
+    }
+
+    pub fn with_params(params: &SimpleAIParams) -> Self {
+        Self {
+            params: params.clone(),
+            color: Color::None,
+        }
+    }
+
+    fn get_column_depth(&mut self, game: &Game, depth: usize) -> usize {
         self.color = game.turn();
         let mut wins = [0.0; 7];
         for col in 0..7 {
-            if !game.col_is_full(col) {
+            if depth < self.params.max_depth {
+                //recursive
+            }
+            else if !game.col_is_full(col) {
                 for _ in 0..self.params.nrollouts {
                     let mut game = game.clone();
                     if let Ok(Some(winner)) = game.drop_piece(col) {
@@ -43,28 +73,6 @@ impl AI for SimpleAI {
         }
         max_col
     }
-}
-
-impl Default for SimpleAI {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl SimpleAI {
-    pub fn new() -> Self {
-        Self {
-            params: SimpleAIParams::default(),
-            color: Color::None,
-        }
-    }
-
-    pub fn with_params(params: &SimpleAIParams) -> Self {
-        Self {
-            params: params.clone(),
-            color: Color::None,
-        }
-    }
 
     fn d_wins(&self, winner: Color) -> f32 {
         if winner == self.color {
@@ -80,6 +88,7 @@ impl SimpleAI {
 #[derive(Clone)]
 pub struct SimpleAIParams {
     pub nrollouts: usize,
+    pub max_depth: usize,
     pub loss_value: f32,
     pub draw_value: f32,
     pub win_value: f32,
@@ -89,6 +98,7 @@ impl Default for SimpleAIParams {
     fn default() -> Self {
         Self {
             nrollouts: 1000,
+            max_depth: 1,
             loss_value: 0.0,
             draw_value: 0.5,
             win_value: 1.0,
