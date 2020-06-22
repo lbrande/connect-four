@@ -7,7 +7,6 @@ pub trait AI {
 
 pub struct SimpleAI {
     params: SimpleAIParams,
-    color: Color,
 }
 
 impl AI for SimpleAI {
@@ -27,19 +26,17 @@ impl SimpleAI {
     pub fn new() -> Self {
         Self {
             params: SimpleAIParams::default(),
-            color: Color::None,
         }
     }
 
     pub fn with_params(params: &SimpleAIParams) -> Self {
         Self {
             params: params.clone(),
-            color: Color::None,
         }
     }
 
     fn get_column_depth(&mut self, game: &Game, depth: usize) -> usize {
-        self.color = game.turn();
+        let self_color = game.turn();
         let mut wins = [0.0; 7];
         for col in 0..7 {
             if depth < self.params.max_depth {
@@ -49,12 +46,12 @@ impl SimpleAI {
                 for _ in 0..self.params.nrollouts {
                     let mut game = game.clone();
                     if let Ok(Some(winner)) = game.drop_piece(col) {
-                        wins[col] = self.params.nrollouts as f32 * self.d_wins(winner);
+                        wins[col] = self.params.nrollouts as f32 * self.d_wins(self_color, winner);
                         break;
                     };
                     loop {
                         if let Ok(Some(winner)) = game.drop_piece(random::<usize>() % 7) {
-                            wins[col] += self.d_wins(winner);
+                            wins[col] += self.d_wins(self_color, winner);
                             break;
                         }
                     }
@@ -74,8 +71,8 @@ impl SimpleAI {
         max_col
     }
 
-    fn d_wins(&self, winner: Color) -> f32 {
-        if winner == self.color {
+    fn d_wins(&self, self_color: Color, winner: Color) -> f32 {
+        if winner == self_color {
             self.params.win_value
         } else if winner == Color::None {
             self.params.draw_value
