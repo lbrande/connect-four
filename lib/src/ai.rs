@@ -11,7 +11,7 @@ pub struct SimpleAI {
 
 impl AI for SimpleAI {
     fn get_column(&mut self, game: &Game) -> usize {
-        self.get_column_depth(game, 1)
+        self.get_column_helper(game, 1)
     }
     
 }
@@ -35,7 +35,7 @@ impl SimpleAI {
         }
     }
 
-    fn get_column_depth(&mut self, game: &Game, depth: usize) -> usize {
+    fn get_column_helper(&mut self, game: &Game, depth: usize) -> usize {
         let self_color = game.turn();
         let mut wins = [0.0; 7];
         for col in 0..7 {
