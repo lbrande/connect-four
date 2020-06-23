@@ -8,8 +8,8 @@ use std::{collections::HashMap, io, io::Write};
 
 fn main() -> io::Result<()> {
     let ai_params = SimpleAIParams::default();
-    let mut ai_o = SimpleAI::with_params(&ai_params);
     let mut ai_x = SimpleAI::with_params(&ai_params);
+    let mut ai_o = SimpleAI::with_params(&ai_params);
     let mut wins: HashMap<Color, usize> = HashMap::new();
     for _ in 0..1 {
         let mut game = Game::new();
@@ -23,7 +23,6 @@ fn main() -> io::Result<()> {
                 wins.entry(winner).and_modify(|c| *c += 1).or_insert(1);
                 break;
             }
-            print_board(&game);
         }
     }
     println!("{} X wins", wins.get(&char_into_color('X')).unwrap_or(&0));
