@@ -7,11 +7,13 @@ use lib::{
 use std::{collections::HashMap, io, io::Write};
 
 fn main() -> io::Result<()> {
-    let ai_params = SimpleAIParams::default();
-    let mut ai_x = SimpleAI::with_params(&ai_params);
+    #[allow(unused_mut)]
+    let mut ai_params = SimpleAIParams::default();
+    ai_params.max_depth = 2;
     let mut ai_o = SimpleAI::with_params(&ai_params);
+    let mut ai_x = SimpleAI::with_params(&ai_params);
     let mut wins: HashMap<Color, usize> = HashMap::new();
-    for _ in 0..1 {
+    for _ in 0..100 {
         let mut game = Game::new();
         loop {
             let col = if color_into_char(game.turn()) == 'X' {

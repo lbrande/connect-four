@@ -64,7 +64,7 @@ impl Game {
         let cell = self.board[col][row];
         for (d_col, d_row) in &[(0, 1), (1, 0), (1, -1), (1, 1)] {
             let mut count = 0;
-            let mut inc_count = |range: &[i32]| {
+            let mut increment_count = |range: &[i32]| {
                 for d_t in range {
                     let i_col = col as i32 + d_t * d_col;
                     let i_row = row as i32 + d_t * d_row;
@@ -75,8 +75,8 @@ impl Game {
                     }
                 }
             };
-            inc_count(&[-1, -2, -3]);
-            inc_count(&[1, 2, 3]);
+            increment_count(&[-1, -2, -3]);
+            increment_count(&[1, 2, 3]);
             if count >= 3 {
                 return Some(cell);
             }

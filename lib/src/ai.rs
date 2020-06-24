@@ -42,7 +42,8 @@ impl SimpleAI {
                 for _ in 0..self.params.nrollouts {
                     let mut game = game.clone();
                     if let Ok(Some(winner)) = game.drop_piece(col) {
-                        wins[col] = self.params.nrollouts as f32 * self.d_wins(self_color, winner);
+                        wins[col] =
+                            self.params.nrollouts as f32 * self.delta_wins(self_color, winner);
                         break;
                     } else if depth < self.params.max_depth {
                         wins[col] = self.params.nrollouts as f32
@@ -51,7 +52,7 @@ impl SimpleAI {
                     }
                     loop {
                         if let Ok(Some(winner)) = game.drop_piece(random::<usize>() % 7) {
-                            wins[col] += self.d_wins(self_color, winner);
+                            wins[col] += self.delta_wins(self_color, winner);
                             break;
                         }
                     }
@@ -71,7 +72,7 @@ impl SimpleAI {
         (max_col, max_wins)
     }
 
-    fn d_wins(&self, self_color: Color, winner: Color) -> f32 {
+    fn delta_wins(&self, self_color: Color, winner: Color) -> f32 {
         if winner == self_color {
             self.params.win_value
         } else if winner == Color::None {
@@ -86,9 +87,9 @@ impl SimpleAI {
 pub struct SimpleAIParams {
     pub nrollouts: usize,
     pub max_depth: usize,
-    pub loss_value: f32,
-    pub draw_value: f32,
     pub win_value: f32,
+    pub draw_value: f32,
+    pub loss_value: f32,
 }
 
 impl Default for SimpleAIParams {
@@ -96,9 +97,9 @@ impl Default for SimpleAIParams {
         Self {
             nrollouts: 1000,
             max_depth: 1,
-            loss_value: 0.0,
-            draw_value: 0.5,
             win_value: 1.0,
+            draw_value: 0.5,
+            loss_value: 0.0,
         }
     }
 }
