@@ -42,22 +42,16 @@ impl Game {
         }
     }
 
-    pub fn take_piece(&mut self, col: usize) {
-        self.turn = !self.turn;
-        self.next_row[col] -= 1;
-        self.board[col][self.next_row[col]] = Color::None;
-    }
-
     pub fn cell(&self, col: usize, row: usize) -> Color {
         self.board[col][row]
     }
 
-    pub fn turn(&self) -> Color {
-        self.turn
-    }
-
     pub fn col_is_full(&self, col: usize) -> bool {
         self.next_row[col] >= 6
+    }
+
+    pub fn turn(&self) -> Color {
+        self.turn
     }
 
     fn winner(&self, col: usize, row: usize) -> Option<Color> {
