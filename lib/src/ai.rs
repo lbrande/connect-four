@@ -38,7 +38,7 @@ impl SimpleAI {
         let self_color = game.turn();
         let mut wins = [0.0; 7];
         for col in 0..7 {
-            if !game.col_is_full(col) {
+            if !game.is_full(col) {
                 for _ in 0..self.params.nrollouts {
                     let mut game = game.clone();
                     if let Ok(Some(winner)) = game.drop_piece(col) {

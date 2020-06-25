@@ -42,11 +42,11 @@ impl Game {
         }
     }
 
-    pub fn cell(&self, col: usize, row: usize) -> Color {
+    pub fn get(&self, col: usize, row: usize) -> Color {
         self.board[col][row]
     }
 
-    pub fn col_is_full(&self, col: usize) -> bool {
+    pub fn is_full(&self, col: usize) -> bool {
         self.next_row[col] >= 6
     }
 
@@ -56,13 +56,13 @@ impl Game {
 
     fn winner(&self, col: usize, row: usize) -> Option<Color> {
         let cell = self.board[col][row];
-        for (d_col, d_row) in &[(0, 1), (1, 0), (1, -1), (1, 1)] {
+        for (delta_col, delta_row) in &[(0, 1), (1, 0), (1, -1), (1, 1)] {
             let mut count = 0;
             let mut increment_count = |range: &[i32]| {
-                for d_t in range {
-                    let i_col = col as i32 + d_t * d_col;
-                    let i_row = row as i32 + d_t * d_row;
-                    if self.is_equals_to_cell(i_col, i_row, cell) {
+                for delta in range {
+                    let col = col as i32 + delta * delta_col;
+                    let row = row as i32 + delta * delta_row;
+                    if cell == self.i32_get(col, row) {
                         count += 1;
                     } else {
                         break;
@@ -75,16 +75,19 @@ impl Game {
                 return Some(cell);
             }
         }
-        if (0..7).all(|c| self.col_is_full(c)) {
+        if (0..7).all(|c| self.is_full(c)) {
             Some(Color::None)
         } else {
             None
         }
     }
 
-    fn is_equals_to_cell(&self, i_col: i32, i_row: i32, cell: Color) -> bool {
-        (i_col >= 0 && i_col < 7 && i_row >= 0 && i_row < 6)
-            && cell == self.board[i_col as usize][i_row as usize]
+    fn i32_get(&self, col: i32, row: i32) -> Color {
+        if col >= 0 && col < 7 && row >= 0 && row < 6 {
+            self.board[col as usize][row as usize]
+        } else {
+            Color::None
+        }
     }
 }
 

@@ -41,7 +41,7 @@ fn get_column_from_user(game: &Game) -> io::Result<usize> {
         io::stdin().read_line(&mut response)?;
         if let Ok(col) = response.trim().parse::<usize>() {
             if col >= 1 && col <= 7 {
-                if !game.col_is_full(col - 1) {
+                if !game.is_full(col - 1) {
                     return Ok(col - 1);
                 } else {
                     println!("Column {} is full", col);
@@ -58,7 +58,7 @@ fn get_column_from_user(game: &Game) -> io::Result<usize> {
 fn print_board(game: &Game) {
     for row in (0..6).rev() {
         for col in 0..7 {
-            print!("|{}", color_into_char(game.cell(col, row)));
+            print!("|{}", color_into_char(game.get(col, row)));
         }
         println!("|");
     }
