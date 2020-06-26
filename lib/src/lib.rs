@@ -42,6 +42,12 @@ impl Game {
         }
     }
 
+    pub fn take_piece(&mut self, col: usize) {
+        self.turn = !self.turn;
+        self.next_row[col] -= 1;
+        self.board[col][self.next_row[col]] = Color::None;
+    }
+
     pub fn get(&self, col: usize, row: usize) -> Color {
         self.board[col][row]
     }
@@ -52,6 +58,10 @@ impl Game {
 
     pub fn turn(&self) -> Color {
         self.turn
+    }
+
+    pub fn turn_num(&self) -> usize {
+        self.next_row.iter().sum()
     }
 
     fn winner(&self, col: usize, row: usize) -> Option<Color> {

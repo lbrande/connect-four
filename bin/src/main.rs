@@ -4,29 +4,54 @@ use lib::{
     ai::{SimpleAI, SimpleAIParams, AI},
     Color, Game,
 };
-use std::{collections::HashMap, io, io::Write};
+use std::{
+    collections::HashMap,
+    io,
+    io::Write,
+    sync::{Arc, Mutex},
+};
 
-fn main() -> io::Result<()> {
+#[tokio::main]
+async fn main() -> io::Result<()> {
     #[allow(unused_mut)]
     let mut ai_params = SimpleAIParams::default();
-    ai_params.max_depth = 2;
-    let mut ai_o = SimpleAI::with_params(&ai_params);
-    let mut ai_x = SimpleAI::with_params(&ai_params);
-    let mut wins: HashMap<Color, usize> = HashMap::new();
-    for _ in 0..100 {
-        let mut game = Game::new();
-        loop {
-            let col = if color_into_char(game.turn()) == 'X' {
-                ai_x.get_column(&game)
-            } else {
-                ai_o.get_column(&game)
-            };
-            if let Some(winner) = game.drop_piece(col).ok().flatten() {
-                wins.entry(winner).and_modify(|c| *c += 1).or_insert(1);
-                break;
+    //ai_params.turn_factor = 0.98;
+    ai_params.max_depth = 1;
+    let ai_o = SimpleAI::with_params(&ai_params);
+    ai_params.win_factor = 0.99;
+    let ai_x = SimpleAI::with_params(&ai_params);
+    let wins: Arc<Mutex<HashMap<Color, usize>>> = Arc::new(Mutex::new(HashMap::new()));
+    let mut tasks = Vec::new();
+    for _ in 0..1000 {
+        let wins = Arc::clone(&wins);
+        let ai_x = ai_x.clone();
+        let ai_o = ai_o.clone();
+        tasks.push(tokio::spawn(async move {
+            let mut game = Game::new();
+            loop {
+                let col = if color_into_char(game.turn()) == 'X' {
+                    ai_x.get_column(&game)
+                } else {
+                    ai_o.get_column(&game)
+                };
+                //println!("{} chose column {}", color_into_char(game.turn()), col + 1);
+                if let Some(winner) = game.drop_piece(col).ok().flatten() {
+                    wins.lock()
+                        .unwrap()
+                        .entry(winner)
+                        .and_modify(|c| *c += 1)
+                        .or_insert(1);
+                    //print_board(&game);
+                    break;
+                }
+                //print_board(&game);
             }
-        }
+        }));
     }
+    for task in tasks {
+        task.await.unwrap();
+    }
+    let wins = wins.lock().unwrap();
     println!("{} X wins", wins.get(&char_into_color('X')).unwrap_or(&0));
     println!("{} O wins", wins.get(&char_into_color('O')).unwrap_or(&0));
     println!("{} draws", wins.get(&char_into_color(' ')).unwrap_or(&0));
