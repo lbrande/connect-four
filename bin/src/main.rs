@@ -11,63 +11,104 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-#[tokio::main]
-async fn main() -> io::Result<()> {
+fn common_params() -> SimpleAIParams {
     #[allow(unused_mut)]
-    let mut ai_params = SimpleAIParams::default();
-    //ai_params.turn_factor = 0.98;
-    ai_params.max_depth = 1;
-    let ai_o = SimpleAI::with_params(&ai_params);
-    ai_params.win_factor = 0.99;
-    let ai_x = SimpleAI::with_params(&ai_params);
-    let wins: Arc<Mutex<HashMap<Color, usize>>> = Arc::new(Mutex::new(HashMap::new()));
+    let mut params = SimpleAIParams::default();
+    params
+}
+
+fn x_params() -> SimpleAIParams {
+    #[allow(unused_mut)]
+    let mut params = common_params();
+    params
+}
+
+fn o_params() -> SimpleAIParams {
+    #[allow(unused_mut)]
+    let mut params = common_params();
+    params
+}
+
+fn ai(params: SimpleAIParams) -> impl Fn(&Game) -> usize {
+    let ai = SimpleAI::with_params(params);
+    move |game| ai.get_column(game)
+}
+
+#[tokio::main]
+async fn main() {
+    let wins = Arc::new(Mutex::new(HashMap::new()));
+    run_ai_games(1000, x_params(), o_params(), &wins).await;
+}
+
+async fn run_ai_games(
+    ngames: usize,
+    x_params: SimpleAIParams,
+    o_params: SimpleAIParams,
+    wins: &Arc<Mutex<HashMap<Color, usize>>>,
+) {
     let mut tasks = Vec::new();
-    for _ in 0..1000 {
+    for _ in 0..ngames {
         let wins = Arc::clone(&wins);
-        let ai_x = ai_x.clone();
-        let ai_o = ai_o.clone();
+        let x_params = x_params.clone();
+        let o_params = o_params.clone();
         tasks.push(tokio::spawn(async move {
-            let mut game = Game::new();
-            loop {
-                let col = if color_into_char(game.turn()) == 'X' {
-                    ai_x.get_column(&game)
-                } else {
-                    ai_o.get_column(&game)
-                };
-                //println!("{} chose column {}", color_into_char(game.turn()), col + 1);
-                if let Some(winner) = game.drop_piece(col).ok().flatten() {
-                    wins.lock()
-                        .unwrap()
-                        .entry(winner)
-                        .and_modify(|c| *c += 1)
-                        .or_insert(1);
-                    //print_board(&game);
-                    break;
-                }
-                //print_board(&game);
-            }
+            let winner = run_game(ai(x_params), ai(o_params), false).unwrap();
+            wins.lock()
+                .unwrap()
+                .entry(winner)
+                .and_modify(|c| *c += 1)
+                .or_insert(1);
         }));
     }
     for task in tasks {
         task.await.unwrap();
     }
-    let wins = wins.lock().unwrap();
-    println!("{} X wins", wins.get(&char_into_color('X')).unwrap_or(&0));
-    println!("{} O wins", wins.get(&char_into_color('O')).unwrap_or(&0));
-    println!("{} draws", wins.get(&char_into_color(' ')).unwrap_or(&0));
-    Ok(())
 }
 
-fn get_column_from_user(game: &Game) -> io::Result<usize> {
+fn print_wins(wins: &Arc<Mutex<HashMap<Color, usize>>>) {
+    let wins = wins.lock().unwrap();
+    println!("{} X wins", wins.get(&char_into_color('X')).unwrap_or(&0));
+    println!("{} draws", wins.get(&char_into_color(' ')).unwrap_or(&0));
+    println!("{} O wins", wins.get(&char_into_color('O')).unwrap_or(&0));
+}
+
+fn run_game(
+    x: impl Fn(&Game) -> usize,
+    o: impl Fn(&Game) -> usize,
+    verbose: bool,
+) -> io::Result<Color> {
+    let mut game = Game::new();
+    loop {
+        let col = if color_into_char(game.turn()) == 'X' {
+            x(&game)
+        } else {
+            o(&game)
+        };
+        if verbose {
+            println!("Chosen column: {}", col + 1);
+        }
+        if let Some(winner) = game.drop_piece(col).ok().flatten() {
+            if verbose {
+                print_board(&game);
+            }
+            return Ok(winner);
+        }
+        if verbose {
+            print_board(&game);
+        }
+    }
+}
+
+fn get_column_from_user(game: &Game) -> usize {
     loop {
         print!("{} to enter column (1 - 7)> ", color_into_char(game.turn()));
-        io::stdout().flush()?;
+        io::stdout().flush().unwrap();
         let mut response = String::new();
-        io::stdin().read_line(&mut response)?;
+        io::stdin().read_line(&mut response).unwrap();
         if let Ok(col) = response.trim().parse::<usize>() {
             if col >= 1 && col <= 7 {
                 if !game.is_full(col - 1) {
-                    return Ok(col - 1);
+                    return col - 1;
                 } else {
                     println!("Column {} is full", col);
                 }

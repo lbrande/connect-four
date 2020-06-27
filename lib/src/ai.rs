@@ -1,5 +1,6 @@
 use crate::{Color, Game};
 use rand::prelude::*;
+use std::io;
 
 pub trait AI {
     fn get_column(&self, game: &Game) -> usize;
@@ -29,31 +30,38 @@ impl SimpleAI {
         }
     }
 
-    pub fn with_params(params: &SimpleAIParams) -> Self {
-        Self {
-            params: params.clone(),
-        }
+    pub fn with_params(params: SimpleAIParams) -> Self {
+        Self { params }
     }
 
     fn get_column_helper(&self, game: &Game, depth: usize) -> (usize, f32) {
         let self_color = game.turn();
-        let nrollouts =
-            self.params.nrollouts as f32 * self.params.turn_factor.powi(game.turn_num() as i32);
+        let f32_nrollouts = self.params.nrollouts as f32;
         let mut wins = [0.0; 7];
         for col in 0..7 {
             if !game.is_full(col) {
-                for _ in 0..nrollouts as usize {
+                'col: for _ in 0..self.params.nrollouts {
                     let mut game = game.clone();
                     if let Ok(Some(winner)) = game.drop_piece(col) {
-                        wins[col] = nrollouts * self.delta_wins(&game, self_color, winner);
+                        wins[col] = f32_nrollouts * self.delta_wins(self_color, winner);
                         break;
                     } else if depth < self.params.max_depth {
-                        wins[col] = nrollouts - self.get_column_helper(&game, depth + 1).1;
+                        wins[col] = f32_nrollouts - self.get_column_helper(&game, depth + 1).1;
                         break;
+                    }
+                    for other_col in 0..7 {
+                        if !game.is_full(other_col) {
+                            if let Ok(Some(winner)) = game.drop_piece(other_col) {
+                                wins[col] = f32_nrollouts * self.delta_wins(self_color, winner);
+                                break 'col;
+                            } else {
+                                game.take_piece(other_col);
+                            }
+                        }
                     }
                     loop {
                         if let Ok(Some(winner)) = game.drop_piece(random::<usize>() % 7) {
-                            wins[col] += self.delta_wins(&game, self_color, winner);
+                            wins[col] += self.delta_wins(self_color, winner);
                             break;
                         }
                     }
@@ -70,17 +78,16 @@ impl SimpleAI {
                 max_wins = wins[max_col];
             }
         }
-        //dbg!(&wins);
         (max_col, max_wins)
     }
 
-    fn delta_wins(&self, game: &Game, self_color: Color, winner: Color) -> f32 {
+    fn delta_wins(&self, self_color: Color, winner: Color) -> f32 {
         if winner == self_color {
-            self.params.win_value * self.params.win_factor.powi(game.turn_num() as i32)
+            1.0
         } else if winner == Color::None {
-            self.params.draw_value * self.params.win_factor.powi(game.turn_num() as i32)
+            0.5
         } else {
-            self.params.loss_value * self.params.win_factor.powi(game.turn_num() as i32)
+            0.0
         }
     }
 }
@@ -88,24 +95,14 @@ impl SimpleAI {
 #[derive(Clone)]
 pub struct SimpleAIParams {
     pub nrollouts: usize,
-    pub turn_factor: f32,
     pub max_depth: usize,
-    pub win_factor: f32,
-    pub win_value: f32,
-    pub draw_value: f32,
-    pub loss_value: f32,
 }
 
 impl Default for SimpleAIParams {
     fn default() -> Self {
         Self {
             nrollouts: 1000,
-            turn_factor: 1.0,
             max_depth: 2,
-            win_factor: 1.0,
-            win_value: 1.0,
-            draw_value: 0.5,
-            loss_value: 0.0,
         }
     }
 }
