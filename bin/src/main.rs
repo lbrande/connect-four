@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use lib::{
-    ai::{SimpleAI, SimpleAIParams, AI},
+    ai::{SimpleAI, AI},
     Color, Game,
 };
 use std::{
@@ -11,35 +11,17 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-fn common_params() -> SimpleAIParams {
-    #[allow(unused_mut)]
-    let mut params = SimpleAIParams::default();
-    params
-}
-
-fn x_params() -> SimpleAIParams {
-    #[allow(unused_mut)]
-    let mut params = common_params();
-    params
-}
-
-fn o_params() -> SimpleAIParams {
-    #[allow(unused_mut)]
-    let mut params = common_params();
-    params
-}
-
 #[allow(unused_variables)]
 #[tokio::main]
 async fn main() {
-    let x = SimpleAI::with_params(x_params());
-    let o = SimpleAI::with_params(o_params());
-    //let x: Option<SimpleAI> = None;
-    //let x = Some(x);
-    //let o: Option<&SimpleAI> = None;
-    //let o = Some(o);
-    //run_verbose_game(x, o);
-    run_ai_games(x, o, 1000, true).await;
+    let x = SimpleAI::with(1000, 2);
+    let o = SimpleAI::with(1000, 2);
+    let x: Option<SimpleAI> = None;
+    // let x = Some(x);
+    // let o: Option<SimpleAI> = None;
+    let o = Some(o);
+    run_verbose_game(x, o);
+    //run_ai_games(x, o, 1000, true).await;
 }
 
 async fn run_ai_games(x: impl AI, o: impl AI, ngames: usize, mirror: bool) {
@@ -47,8 +29,6 @@ async fn run_ai_games(x: impl AI, o: impl AI, ngames: usize, mirror: bool) {
     let mut tasks = Vec::new();
     for game_num in 0..ngames {
         let wins = Arc::clone(&wins);
-        let x = x.clone();
-        let o = o.clone();
         tasks.push(tokio::spawn(async move {
             let winner = if mirror && game_num % 2 == 0 {
                 run_ai_game(o, x)
@@ -76,9 +56,9 @@ fn run_verbose_game(x: Option<impl AI>, o: Option<impl AI>) {
     let mut game = Game::new();
     loop {
         let col = if color_into_char(game.turn()) == 'X' {
-            get_column_verbose(&game, x.as_ref())
+            get_column_verbose(&game, x)
         } else {
-            get_column_verbose(&game, o.as_ref())
+            get_column_verbose(&game, o)
         };
         if let Some(winner) = game.drop_piece(col).ok().flatten() {
             print_board(&game);
@@ -102,12 +82,10 @@ fn run_ai_game(x: impl AI, o: impl AI) -> Color {
     }
 }
 
-fn get_column_verbose(game: &Game, player: Option<&impl AI>) -> usize {
+fn get_column_verbose(game: &Game, player: Option<impl AI>) -> usize {
     print_board(&game);
     if let Some(ai) = player {
-        let col = ai.get_column(&game);
-        println!("X chooses column {}", col + 1);
-        col
+        get_column_from_ai(&game, ai)
     } else {
         get_column_from_user(&game)
     }
@@ -115,7 +93,8 @@ fn get_column_verbose(game: &Game, player: Option<&impl AI>) -> usize {
 
 fn get_column_from_user(game: &Game) -> usize {
     loop {
-        print!("{} to enter column (1 - 7)> ", color_into_char(game.turn()));
+        let color = color_into_char(game.turn());
+        print!("{} to enter column (1 - 7)> ", color);
         io::stdout().flush().unwrap();
         let mut response = String::new();
         io::stdin().read_line(&mut response).unwrap();
@@ -133,6 +112,13 @@ fn get_column_from_user(game: &Game) -> usize {
             println!("{} is not a column", response.trim());
         }
     }
+}
+
+fn get_column_from_ai(game: &Game, ai: impl AI) -> usize {
+    let col = ai.get_column(&game);
+    let color = color_into_char(game.turn());
+    println!("{} chooses column {}", color, col + 1);
+    col
 }
 
 fn print_board(game: &Game) {

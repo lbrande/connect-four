@@ -1,13 +1,14 @@
 use crate::{Color, Game};
 use rand::prelude::*;
 
-pub trait AI: 'static + Clone + Send {
+pub trait AI: 'static + Clone + Copy + Send {
     fn get_column(&self, game: &Game) -> usize;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct SimpleAI {
-    params: SimpleAIParams,
+    nrollouts: usize,
+    max_depth: usize,
 }
 
 impl AI for SimpleAI {
@@ -16,35 +17,26 @@ impl AI for SimpleAI {
     }
 }
 
-impl Default for SimpleAI {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl SimpleAI {
-    pub fn new() -> Self {
+    pub fn with(nrollouts: usize, max_depth: usize) -> Self {
         Self {
-            params: SimpleAIParams::default(),
+            nrollouts,
+            max_depth,
         }
-    }
-
-    pub fn with_params(params: SimpleAIParams) -> Self {
-        Self { params }
     }
 
     fn get_column_helper(&self, game: &Game, depth: usize) -> (usize, f32) {
         let self_color = game.turn();
-        let f32_nrollouts = self.params.nrollouts as f32;
+        let f32_nrollouts = self.nrollouts as f32;
         let mut wins = [0.0; 7];
         for col in 0..7 {
             if !game.is_full(col) {
-                'col: for _ in 0..self.params.nrollouts {
+                'col: for _ in 0..self.nrollouts {
                     let mut game = game.clone();
                     if let Ok(Some(winner)) = game.drop_piece(col) {
                         wins[col] = f32_nrollouts * self.delta_wins(self_color, winner);
                         break;
-                    } else if depth < self.params.max_depth {
+                    } else if depth < self.max_depth {
                         wins[col] = f32_nrollouts - self.get_column_helper(&game, depth + 1).1;
                         break;
                     }
@@ -87,21 +79,6 @@ impl SimpleAI {
             0.5
         } else {
             0.0
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct SimpleAIParams {
-    pub nrollouts: usize,
-    pub max_depth: usize,
-}
-
-impl Default for SimpleAIParams {
-    fn default() -> Self {
-        Self {
-            nrollouts: 500,
-            max_depth: 2,
         }
     }
 }
