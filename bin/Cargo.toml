@@ -8,5 +8,4 @@ edition = "2018"
 
 [dependencies]
 lib = { path = "../lib" }
-rand = "0.7.3"
 tokio = { version = "0.2.21", features = ["full"] }

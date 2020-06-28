@@ -4,7 +4,6 @@ use lib::{
     ai::{SimpleAI, SimpleAIParams, AI},
     Color, Game,
 };
-use rand::prelude::*;
 use std::{
     collections::HashMap,
     io,
@@ -33,27 +32,9 @@ fn o_params() -> SimpleAIParams {
 
 #[tokio::main]
 async fn main() {
-    run_ai_games(1000, true).await;
-}
-
-fn run_hot_seat_game() {
-    print_winner(run_game(get_column_from_user, get_column_from_user, true));
-}
-
-fn run_game_versus_ai(self_color: char) {
-    let winner = match self_color {
-        ' ' => {
-            if random() {
-                run_game(get_column_from_user, ai(o_params()), true)
-            } else {
-                run_game(ai(x_params()), get_column_from_user, true)
-            }
-        }
-        'X' => run_game(get_column_from_user, ai(o_params()), true),
-        'O' => run_game(ai(x_params()), get_column_from_user, true),
-        c => panic!("{} is not a color", c),
-    };
-    print_winner(winner);
+    let x: Option<&SimpleAI> = None;
+    let o: Option<&SimpleAI> = None;
+    run_verbose_game(x, o);
 }
 
 async fn run_ai_games(ngames: usize, mirror: bool) {
@@ -61,11 +42,13 @@ async fn run_ai_games(ngames: usize, mirror: bool) {
     let mut tasks = Vec::new();
     for _ in 0..ngames {
         let wins = Arc::clone(&wins);
+        let x = SimpleAI::with_params(x_params());
+        let o = SimpleAI::with_params(o_params());
         tasks.push(tokio::spawn(async move {
             let winner = if mirror && ngames % 2 == 0 {
-                run_game(ai(x_params()), ai(o_params()), false)
+                run_ai_game(x, o)
             } else {
-                run_game(ai(o_params()), ai(x_params()), false)
+                run_ai_game(o, x)
             };
             let mut wins = wins.lock().unwrap();
             if mirror && ngames % 2 == 0 {
@@ -84,32 +67,45 @@ async fn run_ai_games(ngames: usize, mirror: bool) {
     println!("{} O wins", wins.get(&char_into_color('O')).unwrap_or(&0));
 }
 
-fn run_game(x: impl Fn(&Game) -> usize, o: impl Fn(&Game) -> usize, verbose: bool) -> Color {
+fn run_ai_game(x: impl AI, o: impl AI) -> Color {
     let mut game = Game::new();
     loop {
         let col = if color_into_char(game.turn()) == 'X' {
-            x(&game)
+            x.get_column(&game)
         } else {
-            o(&game)
+            o.get_column(&game)
         };
-        if verbose {
-            println!("Chosen column: {}", col + 1);
-        }
         if let Some(winner) = game.drop_piece(col).ok().flatten() {
-            if verbose {
-                print_board(&game);
-            }
             return winner;
-        }
-        if verbose {
-            print_board(&game);
         }
     }
 }
 
-fn ai(params: SimpleAIParams) -> impl Fn(&Game) -> usize {
-    let ai = SimpleAI::with_params(params);
-    move |game| ai.get_column(game)
+fn run_verbose_game(x: Option<&impl AI>, o: Option<&impl AI>) {
+    let mut game = Game::new();
+    loop {
+        let col = if color_into_char(game.turn()) == 'X' {
+            get_column_verbose(&game, x)
+        } else {
+            get_column_verbose(&game, o)
+        };
+        if let Some(winner) = game.drop_piece(col).ok().flatten() {
+            print_board(&game);
+            print_winner(winner);
+            return;
+        }
+    }
+}
+
+fn get_column_verbose(game: &Game, player: Option<&impl AI>) -> usize {
+    if let Some(ai) = player {
+        let col = ai.get_column(&game);
+        println!("X chooses column {}", col + 1);
+        col
+    } else {
+        print_board(&game);
+        get_column_from_user(&game)
+    }
 }
 
 fn get_column_from_user(game: &Game) -> usize {
@@ -148,7 +144,7 @@ fn print_winner(winner: Color) {
         ' ' => println!("Draw"),
         'X' => println!("X wins"),
         'O' => println!("O wins"),
-        _ => unreachable!()
+        _ => unreachable!(),
     }
 }
 
