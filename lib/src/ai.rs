@@ -61,6 +61,10 @@ impl SimpleAI {
                 wins[col] = -1.0;
             }
         }
+        Self::max(wins)
+    }
+
+    fn max(wins: [f32; 7]) -> (usize, f32) {
         let mut max_col = 0;
         let mut max_wins = wins[max_col];
         for col in 1..7 {
