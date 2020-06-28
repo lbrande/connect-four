@@ -32,18 +32,20 @@ fn o_params() -> SimpleAIParams {
 
 #[tokio::main]
 async fn main() {
-    let x: Option<&SimpleAI> = None;
-    let o: Option<&SimpleAI> = None;
-    run_verbose_game(x, o);
+    let x = SimpleAI::with_params(x_params());
+    //let x: Option<&SimpleAI> = None;
+    let o = SimpleAI::with_params(o_params());
+    //let o: Option<&SimpleAI> = None;
+    run_verbose_game(Some(&x), Some(&o));
 }
 
-async fn run_ai_games(ngames: usize, mirror: bool) {
+async fn run_ai_games(x: impl AI<'static>, o: impl AI<'static>, ngames: usize, mirror: bool) {
     let wins = Arc::new(Mutex::new(HashMap::new()));
     let mut tasks = Vec::new();
     for _ in 0..ngames {
         let wins = Arc::clone(&wins);
-        let x = SimpleAI::with_params(x_params());
-        let o = SimpleAI::with_params(o_params());
+        let x = x.clone();
+        let o = o.clone();
         tasks.push(tokio::spawn(async move {
             let winner = if mirror && ngames % 2 == 0 {
                 run_ai_game(x, o)
@@ -67,7 +69,7 @@ async fn run_ai_games(ngames: usize, mirror: bool) {
     println!("{} O wins", wins.get(&char_into_color('O')).unwrap_or(&0));
 }
 
-fn run_ai_game(x: impl AI, o: impl AI) -> Color {
+fn run_ai_game<'a>(x: impl AI<'a>, o: impl AI<'a>) -> Color {
     let mut game = Game::new();
     loop {
         let col = if color_into_char(game.turn()) == 'X' {
@@ -81,7 +83,7 @@ fn run_ai_game(x: impl AI, o: impl AI) -> Color {
     }
 }
 
-fn run_verbose_game(x: Option<&impl AI>, o: Option<&impl AI>) {
+fn run_verbose_game<'a>(x: Option<&impl AI<'a>>, o: Option<&impl AI<'a>>) {
     let mut game = Game::new();
     loop {
         let col = if color_into_char(game.turn()) == 'X' {
@@ -97,13 +99,13 @@ fn run_verbose_game(x: Option<&impl AI>, o: Option<&impl AI>) {
     }
 }
 
-fn get_column_verbose(game: &Game, player: Option<&impl AI>) -> usize {
+fn get_column_verbose<'a>(game: &Game, player: Option<&impl AI<'a>>) -> usize {
+    print_board(&game);
     if let Some(ai) = player {
         let col = ai.get_column(&game);
         println!("X chooses column {}", col + 1);
         col
     } else {
-        print_board(&game);
         get_column_from_user(&game)
     }
 }

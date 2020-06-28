@@ -1,7 +1,7 @@
 use crate::{Color, Game};
 use rand::prelude::*;
 
-pub trait AI {
+pub trait AI<'a>: 'a + Clone + Send + Sync {
     fn get_column(&self, game: &Game) -> usize;
 }
 
@@ -10,7 +10,7 @@ pub struct SimpleAI {
     params: SimpleAIParams,
 }
 
-impl AI for SimpleAI {
+impl AI<'_> for SimpleAI {
     fn get_column(&self, game: &Game) -> usize {
         self.get_column_helper(game, 1).0
     }
