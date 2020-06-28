@@ -60,10 +60,6 @@ impl Game {
         self.turn
     }
 
-    pub fn turn_num(&self) -> usize {
-        self.next_row.iter().sum()
-    }
-
     fn winner(&self, col: usize, row: usize) -> Option<Color> {
         let cell = self.board[col][row];
         for (delta_col, delta_row) in &[(0, 1), (1, 0), (1, -1), (1, 1)] {
