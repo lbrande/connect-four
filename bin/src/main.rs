@@ -33,19 +33,14 @@ fn o_params() -> SimpleAIParams {
 
 #[tokio::main]
 async fn main() {
-    let wins = run_ai_games(1000, true).await;
-    print_wins(&wins);
+    run_ai_games(1000, true).await;
 }
 
-fn run_hot_seat_game() -> HashMap<Color, usize> {
-    let mut wins = HashMap::new();
-    let winner = run_game(get_column_from_user, get_column_from_user, true);
-    wins.insert(winner, 1);
-    wins
+fn run_hot_seat_game() {
+    print_winner(run_game(get_column_from_user, get_column_from_user, true));
 }
 
-fn run_game_versus_ai(self_color: char) -> HashMap<Color, usize> {
-    let mut wins = HashMap::new();
+fn run_game_versus_ai(self_color: char) {
     let winner = match self_color {
         ' ' => {
             if random() {
@@ -58,11 +53,10 @@ fn run_game_versus_ai(self_color: char) -> HashMap<Color, usize> {
         'O' => run_game(ai(x_params()), get_column_from_user, true),
         c => panic!("{} is not a color", c),
     };
-    wins.insert(winner, 1);
-    wins
+    print_winner(winner);
 }
 
-async fn run_ai_games(ngames: usize, mirror: bool) -> HashMap<Color, usize> {
+async fn run_ai_games(ngames: usize, mirror: bool) {
     let wins = Arc::new(Mutex::new(HashMap::new()));
     let mut tasks = Vec::new();
     for _ in 0..ngames {
@@ -85,7 +79,9 @@ async fn run_ai_games(ngames: usize, mirror: bool) -> HashMap<Color, usize> {
         task.await.unwrap();
     }
     let wins = wins.lock().unwrap();
-    wins.clone()
+    println!("{} X wins", wins.get(&char_into_color('X')).unwrap_or(&0));
+    println!("{} draws", wins.get(&char_into_color(' ')).unwrap_or(&0));
+    println!("{} O wins", wins.get(&char_into_color('O')).unwrap_or(&0));
 }
 
 fn run_game(x: impl Fn(&Game) -> usize, o: impl Fn(&Game) -> usize, verbose: bool) -> Color {
@@ -147,10 +143,13 @@ fn print_board(game: &Game) {
     }
 }
 
-fn print_wins(wins: &HashMap<Color, usize>) {
-    println!("{} X wins", wins.get(&char_into_color('X')).unwrap_or(&0));
-    println!("{} draws", wins.get(&char_into_color(' ')).unwrap_or(&0));
-    println!("{} O wins", wins.get(&char_into_color('O')).unwrap_or(&0));
+fn print_winner(winner: Color) {
+    match color_into_char(winner) {
+        ' ' => println!("Draw"),
+        'X' => println!("X wins"),
+        'O' => println!("O wins"),
+        _ => unreachable!()
+    }
 }
 
 fn color_into_char(color: Color) -> char {
