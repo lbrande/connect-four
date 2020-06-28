@@ -1,6 +1,5 @@
 use crate::{Color, Game};
 use rand::prelude::*;
-use std::io;
 
 pub trait AI {
     fn get_column(&self, game: &Game) -> usize;
