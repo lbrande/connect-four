@@ -16,12 +16,12 @@ use std::{
 async fn main() {
     let x = SimpleAI::with(1000, 2);
     let o = SimpleAI::with(1000, 2);
-    let x: Option<SimpleAI> = None;
+    // let x: Option<SimpleAI> = None;
     // let x = Some(x);
     // let o: Option<SimpleAI> = None;
-    let o = Some(o);
-    run_verbose_game(x, o);
-    //run_ai_games(x, o, 1000, true).await;
+    // let o = Some(o);
+    // run_verbose_game(x, o);
+    run_ai_games(x, o, 1000, true).await;
 }
 
 async fn run_ai_games(x: impl AI, o: impl AI, ngames: usize, mirror: bool) {

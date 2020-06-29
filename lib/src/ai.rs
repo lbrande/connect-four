@@ -27,41 +27,47 @@ impl SimpleAI {
 
     fn get_column_helper(&self, game: &Game, depth: usize) -> (usize, f32) {
         let self_color = game.turn();
-        let f32_nrollouts = self.nrollouts as f32;
-        let mut wins = [0.0; 7];
+        let mut wins = [-1.0; 7];
         for col in 0..7 {
             if !game.is_full(col) {
-                'col: for _ in 0..self.nrollouts {
-                    let mut game = game.clone();
-                    if let Ok(Some(winner)) = game.drop_piece(col) {
-                        wins[col] = f32_nrollouts * self.delta_wins(self_color, winner);
-                        break;
-                    } else if depth < self.max_depth {
-                        wins[col] = f32_nrollouts - self.get_column_helper(&game, depth + 1).1;
-                        break;
-                    }
-                    for other_col in 0..7 {
-                        if !game.is_full(other_col) {
-                            if let Ok(Some(winner)) = game.drop_piece(other_col) {
-                                wins[col] = f32_nrollouts * self.delta_wins(self_color, winner);
-                                break 'col;
-                            } else {
-                                game.take_piece(other_col);
-                            }
-                        }
-                    }
-                    loop {
-                        if let Ok(Some(winner)) = game.drop_piece(random::<usize>() % 7) {
-                            wins[col] += self.delta_wins(self_color, winner);
-                            break;
-                        }
+                let mut game = game.clone();
+                if let Ok(Some(winner)) = game.drop_piece(col) {
+                    wins[col] = self.nrollouts as f32 * Self::delta_wins(self_color, winner);
+                    return (col, wins[col]);
+                } else if let Some(winner) = Self::drop_any_piece(&mut game) {
+                    wins[col] = self.nrollouts as f32 * Self::delta_wins(self_color, winner);
+                } else if depth < self.max_depth {
+                    wins[col] = self.nrollouts as f32 - self.get_column_helper(&game, depth + 1).1;
+                } else {
+                    for _ in 0..self.nrollouts {
+                        wins[col] += Self::delta_wins(self_color, Self::rollout(&game));
                     }
                 }
-            } else {
-                wins[col] = -1.0;
             }
         }
         Self::max(wins)
+    }
+
+    fn drop_any_piece(game: &mut Game) -> Option<Color> {
+        for col in 0..7 {
+            if !game.is_full(col) {
+                if let Ok(Some(winner)) = game.drop_piece(col) {
+                    return Some(winner);
+                } else {
+                    game.take_piece(col);
+                }
+            }
+        }
+        None
+    }
+
+    fn rollout(game: &Game) -> Color {
+        let mut game = game.clone();
+        loop {
+            if let Ok(Some(winner)) = game.drop_piece(random::<usize>() % 7) {
+                return winner;
+            }
+        }
     }
 
     fn max(wins: [f32; 7]) -> (usize, f32) {
@@ -76,7 +82,7 @@ impl SimpleAI {
         (max_col, max_wins)
     }
 
-    fn delta_wins(&self, self_color: Color, winner: Color) -> f32 {
+    fn delta_wins(self_color: Color, winner: Color) -> f32 {
         if winner == self_color {
             1.0
         } else if winner == Color::None {
