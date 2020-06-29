@@ -25,19 +25,19 @@ impl SimpleAI {
         }
     }
 
-    fn get_column_helper(&self, game: &Game, depth: usize) -> (usize, f32) {
+    fn get_column_helper(&self, game: &Game, depth: usize) -> (usize, i32) {
         let self_color = game.turn();
-        let mut wins = [-1.0; 7];
+        let mut wins = [i32::MIN; 7];
         for col in 0..7 {
             if !game.is_full(col) {
                 let mut game = game.clone();
                 if let Ok(Some(winner)) = game.drop_piece(col) {
-                    wins[col] = self.nrollouts as f32 * Self::delta_wins(self_color, winner);
+                    wins[col] = self.nrollouts as i32 * Self::delta_wins(self_color, winner);
                     return (col, wins[col]);
                 } else if let Some(winner) = Self::drop_any_piece(&mut game) {
-                    wins[col] = self.nrollouts as f32 * Self::delta_wins(self_color, winner);
+                    wins[col] = self.nrollouts as i32 * Self::delta_wins(self_color, winner);
                 } else if depth < self.max_depth {
-                    wins[col] = self.nrollouts as f32 - self.get_column_helper(&game, depth + 1).1;
+                    wins[col] = self.nrollouts as i32 - self.get_column_helper(&game, depth + 1).1;
                 } else {
                     for _ in 0..self.nrollouts {
                         wins[col] += Self::delta_wins(self_color, Self::rollout(&game));
@@ -70,7 +70,7 @@ impl SimpleAI {
         }
     }
 
-    fn max(wins: [f32; 7]) -> (usize, f32) {
+    fn max(wins: [i32; 7]) -> (usize, i32) {
         let mut max_col = 0;
         let mut max_wins = wins[max_col];
         for col in 1..7 {
@@ -82,13 +82,13 @@ impl SimpleAI {
         (max_col, max_wins)
     }
 
-    fn delta_wins(self_color: Color, winner: Color) -> f32 {
+    fn delta_wins(self_color: Color, winner: Color) -> i32 {
         if winner == self_color {
-            1.0
+            1
         } else if winner == Color::None {
-            0.5
+            0
         } else {
-            0.0
+            -1
         }
     }
 }
