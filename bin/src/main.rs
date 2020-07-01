@@ -14,8 +14,8 @@ use std::{
 #[allow(unused_variables)]
 #[tokio::main]
 async fn main() {
-    let x = SimpleAI::with(1000, 2);
-    let o = SimpleAI::with(1000, 2);
+    let x = SimpleAI::with(500, 1);
+    let o = SimpleAI::with(500, 1);
     // let x: Option<SimpleAI> = None;
     // let x = Some(x);
     // let o: Option<SimpleAI> = None;
