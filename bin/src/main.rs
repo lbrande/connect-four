@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
 use lib::{
-    ai::{SimpleAI, AI},
-    Color, Game,
+    ai::{SimpleAI, AI, PerfectAI},
+    Color, Game, NCOLS, NROWS,
 };
 use std::{
     collections::HashMap,
@@ -15,13 +15,13 @@ use std::{
 #[tokio::main]
 async fn main() {
     let x = SimpleAI::with(500, 1);
-    let o = SimpleAI::with(500, 1);
+    let o = PerfectAI::new();
     // let x: Option<SimpleAI> = None;
-    // let x = Some(x);
+    let x = Some(x);
     // let o: Option<SimpleAI> = None;
-    // let o = Some(o);
-    // run_verbose_game(x, o);
-    run_ai_games(x, o, 1000, true).await;
+    let o = Some(o);
+    run_verbose_game(x, o);
+    // run_ai_games(x, o, 1, true).await;
 }
 
 async fn run_ai_games(x: impl AI, o: impl AI, ngames: usize, mirror: bool) {
@@ -94,12 +94,12 @@ fn get_column_verbose(game: &Game, player: Option<impl AI>) -> usize {
 fn get_column_from_user(game: &Game) -> usize {
     loop {
         let color = color_into_char(game.turn());
-        print!("{} to enter column (1 - 7)> ", color);
+        print!("{} to enter column (1 - {})> ", color, NCOLS);
         io::stdout().flush().unwrap();
         let mut response = String::new();
         io::stdin().read_line(&mut response).unwrap();
         if let Ok(col) = response.trim().parse::<usize>() {
-            if col >= 1 && col <= 7 {
+            if col >= 1 && col <= NCOLS {
                 if !game.is_full(col - 1) {
                     return col - 1;
                 } else {
@@ -122,8 +122,8 @@ fn get_column_from_ai(game: &Game, ai: impl AI) -> usize {
 }
 
 fn print_board(game: &Game) {
-    for row in (0..6).rev() {
-        for col in 0..7 {
+    for row in (0..NROWS).rev() {
+        for col in 0..NCOLS {
             print!("|{}", color_into_char(game.get(col, row)));
         }
         println!("|");

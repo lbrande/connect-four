@@ -4,10 +4,14 @@ use std::ops::Not;
 
 pub mod ai;
 
+pub const NROWS: usize = 6;
+pub const NCOLS: usize = 7;
+pub const NWIN: usize = 4;
+
 #[derive(Clone)]
 pub struct Game {
-    board: [[Color; 6]; 7],
-    next_row: [usize; 7],
+    board: [[Color; NROWS]; NCOLS],
+    next_row: [usize; NCOLS],
     turn: Color,
 }
 
@@ -20,15 +24,15 @@ impl Default for Game {
 impl Game {
     pub fn new() -> Self {
         Self {
-            board: [[Color::None; 6]; 7],
-            next_row: [0; 7],
+            board: [[Color::None; NROWS]; NCOLS],
+            next_row: [0; NCOLS],
             turn: Color::Blue,
         }
     }
 
     pub fn drop_piece(&mut self, col: usize) -> Result<Option<Color>, ()> {
         let row = self.next_row[col];
-        if row < 6 {
+        if row < NROWS {
             self.board[col][row] = self.turn;
             self.next_row[col] += 1;
             self.turn = !self.turn;
@@ -53,7 +57,7 @@ impl Game {
     }
 
     pub fn is_full(&self, col: usize) -> bool {
-        self.next_row[col] >= 6
+        self.next_row[col] >= NROWS
     }
 
     pub fn turn(&self) -> Color {
@@ -77,11 +81,11 @@ impl Game {
             };
             increment_count(&[-1, -2, -3]);
             increment_count(&[1, 2, 3]);
-            if count >= 3 {
+            if count >= NWIN - 1 {
                 return Some(cell);
             }
         }
-        if (0..7).all(|c| self.is_full(c)) {
+        if (0..NCOLS).all(|c| self.is_full(c)) {
             Some(Color::None)
         } else {
             None
@@ -89,7 +93,7 @@ impl Game {
     }
 
     fn i32_get(&self, col: i32, row: i32) -> Color {
-        if col >= 0 && col < 7 && row >= 0 && row < 6 {
+        if col >= 0 && col < NCOLS as i32 && row >= 0 && row < NROWS as i32 {
             self.board[col as usize][row as usize]
         } else {
             Color::None
