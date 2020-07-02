@@ -8,7 +8,7 @@ pub const NROWS: usize = 6;
 pub const NCOLS: usize = 7;
 pub const NWIN: usize = 4;
 
-#[derive(Clone, Eq, PartialEq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Game {
     board: [[Color; NROWS]; NCOLS],
     next_row: [usize; NCOLS],

@@ -79,19 +79,24 @@ impl SimpleAI {
 
 #[derive(Clone)]
 pub struct PerfectAI {
-    memo: HashMap<Game, (i32, usize, f32)>
+    nrollouts: usize,
+    max_depth: usize,
+    memo: HashMap<Game, (i32, usize, f32)>,
 }
 
 impl AI for PerfectAI {
     fn get_column(&mut self, game: &Game) -> usize {
-        self.get_column_helper(&mut game.clone(), 7, -1.0, 1.0).0
+        self.get_column_helper(&mut game.clone(), self.max_depth, -1.0, 1.0)
+            .0
     }
 }
 
 impl PerfectAI {
-    pub fn new() -> Self {
+    pub fn with(nrollouts: usize, max_depth: usize) -> Self {
         Self {
-            memo: HashMap::new()
+            nrollouts,
+            max_depth,
+            memo: HashMap::new(),
         }
     }
 
@@ -116,12 +121,12 @@ impl PerfectAI {
             }
         }
         if depth == 0 {
-            return Self::get_column_from_rollout(game, 500);
+            return Self::get_column_from_rollout(game, self.nrollouts);
         }
         let self_color = game.turn();
         let mut max_col = 0;
         let mut max_value = f32::MIN;
-        for col in Self::cols_in_order(&game, 250) {
+        for col in Self::cols_in_order(&game, self.nrollouts / 2) {
             let value = if let Ok(Some(winner)) = game.drop_piece(col) {
                 delta_wins(self_color, winner) as f32
             } else {
