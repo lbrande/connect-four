@@ -1,18 +1,19 @@
 use crate::{Color, Game, NCOLS};
 use rand::prelude::*;
+use std::collections::HashMap;
 
-pub trait AI: 'static + Clone + Copy + Send {
-    fn get_column(&self, game: &Game) -> usize;
+pub trait AI: 'static + Clone + Send {
+    fn get_column(&mut self, game: &Game) -> usize;
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct SimpleAI {
     nrollouts: usize,
     max_depth: usize,
 }
 
 impl AI for SimpleAI {
-    fn get_column(&self, game: &Game) -> usize {
+    fn get_column(&mut self, game: &Game) -> usize {
         self.get_column_helper(game, self.max_depth).0
     }
 }
@@ -76,29 +77,55 @@ impl SimpleAI {
     }
 }
 
-#[derive(Clone, Copy)]
-pub struct PerfectAI {}
+#[derive(Clone)]
+pub struct PerfectAI {
+    memo: HashMap<Game, (i32, usize, f32)>
+}
 
 impl AI for PerfectAI {
-    fn get_column(&self, game: &Game) -> usize {
-        Self::get_column_helper(&mut game.clone(), -1, 1).0
+    fn get_column(&mut self, game: &Game) -> usize {
+        self.get_column_helper(&mut game.clone(), 7, -1.0, 1.0).0
     }
 }
 
 impl PerfectAI {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            memo: HashMap::new()
+        }
     }
 
-    fn get_column_helper(game: &mut Game, mut alpha: i32, beta: i32) -> (usize, i32) {
+    fn get_column_helper(
+        &mut self,
+        game: &mut Game,
+        depth: usize,
+        mut alpha: f32,
+        mut beta: f32,
+    ) -> (usize, f32) {
+        let alpha_original = alpha;
+        if let Some(&(bound, col, value)) = self.memo.get(game) {
+            if bound == -1 {
+                alpha = alpha.max(value);
+            } else if bound == 1 {
+                beta = beta.min(value);
+            } else {
+                return (col, value);
+            }
+            if alpha >= beta {
+                return (col, value);
+            }
+        }
+        if depth == 0 {
+            return Self::get_column_from_rollout(game, 500);
+        }
         let self_color = game.turn();
         let mut max_col = 0;
-        let mut max_value = -1;
-        for col in Self::cols_in_order(&game, 500) {
+        let mut max_value = f32::MIN;
+        for col in Self::cols_in_order(&game, 250) {
             let value = if let Ok(Some(winner)) = game.drop_piece(col) {
-                delta_wins(self_color, winner)
+                delta_wins(self_color, winner) as f32
             } else {
-                -Self::get_column_helper(game, -beta, -alpha).1
+                -self.get_column_helper(game, depth - 1, -beta, -alpha).1
             };
             game.take_piece(col);
             if value > max_value {
@@ -110,7 +137,38 @@ impl PerfectAI {
                 break;
             }
         }
+        if max_value <= alpha_original {
+            self.memo.insert(game.clone(), (1, max_col, max_value));
+        } else if max_value >= beta {
+            self.memo.insert(game.clone(), (-1, max_col, max_value));
+        } else {
+            self.memo.insert(game.clone(), (0, max_col, max_value));
+        }
         (max_col, max_value)
+    }
+
+    fn get_column_from_rollout(game: &Game, nrollouts: usize) -> (usize, f32) {
+        let self_color = game.turn();
+        let mut max_col = 0;
+        let mut max_wins = -1;
+        for col in 0..NCOLS {
+            let mut game = game.clone();
+            if game.is_full(col) {
+                continue;
+            } else if let Ok(Some(_)) = game.drop_piece(col) {
+                return (col, 1.0);
+            } else {
+                let mut wins = 0;
+                for _ in 0..nrollouts {
+                    wins += delta_wins(self_color, rollout(&game));
+                }
+                if wins > max_wins {
+                    max_col = col;
+                    max_wins = wins;
+                }
+            }
+        }
+        (max_col, max_wins as f32 / nrollouts as f32)
     }
 
     fn cols_in_order(game: &Game, nrollouts: usize) -> Vec<usize> {
