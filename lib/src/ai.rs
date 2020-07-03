@@ -40,7 +40,7 @@ impl SimpleAI {
                 } else if let Some(winner) = Self::drop_any_piece(&mut game) {
                     wins[col] = self.nrollouts as i32 * delta_wins(self_color, winner);
                 } else if depth > 0 {
-                    wins[col] = self.nrollouts as i32 - self.get_column_helper(&game, depth - 1).1;
+                    wins[col] = -self.get_column_helper(&game, depth - 1).1;
                 } else {
                     for _ in 0..self.nrollouts {
                         wins[col] += delta_wins(self_color, rollout(&game));
