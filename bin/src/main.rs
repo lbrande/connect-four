@@ -14,14 +14,14 @@ use std::{
 #[allow(unused_variables)]
 #[tokio::main]
 async fn main() {
-    let x = PerfectAI::with(500, 10);
-    let o = SimpleAI::with(500, 1);
-    // let x: Option<SimpleAI> = None;
+    let x = PerfectAI::with(500, 5);
+    let o = PerfectAI::with(500, 5);
+    let x: Option<SimpleAI> = None;
     // let x = Some(x);
     // let o: Option<SimpleAI> = None;
-    // let o = Some(o);
-    // run_verbose_game(x, o);
-    run_ai_games(x, o, 10, false).await;
+    let o = Some(o);
+    run_verbose_game(x, o);
+    // run_ai_games(x, o, 10, true).await;
 }
 
 async fn run_ai_games(x: impl AI, o: impl AI, ngames: usize, mirror: bool) {
